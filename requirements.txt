@@ -1,0 +1,38 @@
+# 推荐环境：Python 3.9 或 3.10
+# 如用conda建议：conda create -n deeplab python=3.10
+
+# 核心深度学习
+torch>=1.7.1,<=2.2.0
+torchvision>=0.8.2,<=0.17.0
+
+# 数据处理与科学计算
+numpy>=1.19
+matplotlib>=3.3
+Pillow>=8.0
+
+# 可选：tensorboard日志
+tensorboard>=2.4
+
+# 进度条
+tqdm
+
+# 兼容性/实用工具
+scipy
+# scikit-learn
+# 如需用到sklearn请手动安装对应版本，或在Python 3.10及以下环境下使用。
+# Cityscapes官方脚本依赖
+opencv-python
+
+# 仅在部分环境需要
+kiwisolver
+
+# Windows兼容性建议
+colorama
+
+# 若有分布式训练需求
+# torch==1.10.0+cu113 # 按需指定CUDA版本
+
+# 其它常见依赖（如有用到）
+pyyaml
+
+# 如遇依赖报错，按提示补充安装
