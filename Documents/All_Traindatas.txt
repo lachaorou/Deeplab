@@ -1,0 +1,94 @@
+[
+  {
+    "src": "Cityscapes",
+    "dst": "data/cityscapes"
+  },
+  {
+    "src": "VOCdevkit",
+    "dst": "data/voc"
+  },
+  {
+    "src": "img",
+    "dst": "data/processed/img"
+  },
+  {
+    "src": "img_out",
+    "dst": "data/processed/img_out"
+  },
+  {
+    "src": "model_data",
+    "dst": "data/model_data"
+  },
+  {
+    "src": "auto_copy_cityscapes_to_voc.py",
+    "dst": "data/scripts/auto_copy_cityscapes_to_voc.py"
+  },
+  {
+    "src": "gen_voc_train_txt.py",
+    "dst": "data/scripts/gen_voc_train_txt.py"
+  },
+  {
+    "src": "gen_voc_val_txt.py",
+    "dst": "data/scripts/gen_voc_val_txt.py"
+  },
+  {
+    "src": "halve_voc_split_and_clean.py",
+    "dst": "data/scripts/halve_voc_split_and_clean.py"
+  },
+  {
+    "src": "clear_and_copy_cityscapes_labels.py",
+    "dst": "data/scripts/clear_and_copy_cityscapes_labels.py"
+  },
+  {
+    "src": "copy_cityscapes_labels.py",
+    "dst": "data/scripts/copy_cityscapes_labels.py"
+  },
+  {
+    "src": "sample_voc_split.py",
+    "dst": "data/scripts/sample_voc_split.py"
+  },
+  {
+    "src": "stat_label_distribution.py",
+    "dst": "utils/stat_label_distribution.py"
+  },
+  {
+    "src": "deeplab.py",
+    "dst": "models/deeplab.py"
+  },
+  {
+    "src": "check_label_values.py",
+    "dst": "utils/check_label_values.py"
+  },
+  {
+    "src": "check_missing_labels.py",
+    "dst": "utils/check_missing_labels.py"
+  },
+  {
+    "src": "train.py",
+    "dst": "scripts/train.py"
+  },
+  {
+    "src": "predict.py",
+    "dst": "scripts/predict.py"
+  },
+  {
+    "src": "predict2.py",
+    "dst": "scripts/predict2.py"
+  },
+  {
+    "src": "get_miou.py",
+    "dst": "scripts/get_miou.py"
+  },
+  {
+    "src": "auto_resume_train.py",
+    "dst": "scripts/auto_resume_train.py"
+  },
+  {
+    "src": "model_summary.py",
+    "dst": "scripts/model_summary.py"
+  },
+  {
+    "src": "voc_annotation.py",
+    "dst": "data/scripts/voc_annotation.py"
+  }
+]
