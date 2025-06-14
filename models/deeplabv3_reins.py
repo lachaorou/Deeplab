@@ -215,7 +215,7 @@ class ASPP(nn.Module):
 
 
 class DeepLab(nn.Module):
-    def __init__(self, num_classes, backbone, pretrained=True, downsample_factor=16, token_length=120, num_layers=6, embed_dims=None):
+    def __init__(self, num_classes, backbone, pretrained, downsample_factor, token_length, num_layers, embed_dims=None):
         print(f'[Debug] DeepLab __init__ 参数: num_classes={num_classes}, backbone={backbone}, pretrained={pretrained}, downsample_factor={downsample_factor}, token_length={token_length}, num_layers={num_layers}, embed_dims={embed_dims}')
         super(DeepLab, self).__init__()
 

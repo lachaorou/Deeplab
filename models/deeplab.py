@@ -135,14 +135,19 @@ class DeeplabV3(object):
                 backbone=self.backbone,
                 pretrained=False,
                 downsample_factor=self.downsample_factor,
-                token_length=self.token_length
+                token_length=self.token_length,
+                num_layers=self.num_layers,
+                embed_dims=None
             )
         else:
             self.net = DeepLab(
                 num_classes=self.num_classes,
                 backbone=self.backbone,
                 pretrained=False,
-                downsample_factor=self.downsample_factor
+                downsample_factor=self.downsample_factor,
+                token_length=self.token_length,
+                num_layers=self.num_layers,
+                embed_dims=None
             )
         device      = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.net.load_state_dict(torch.load(self.model_path, map_location=device))
