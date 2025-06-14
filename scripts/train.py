@@ -1043,3 +1043,57 @@ if __name__ == "__main__":
     by_sample_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Inspect/VisualizeCompare/by_sample'))
     generate_visual_reports(visual_dir, by_sample_dir)
 
+import csv
+
+def save_experiment_record(param_dict, best_weight_path):
+    """
+    保存当前实验参数到 config.txt 和 Documents/experiment_records.csv。
+    param_dict: dict，当前训练参数。
+    best_weight_path: str，best权重的保存路径。
+    """
+    import os
+    # 保存 config.txt
+    log_dir = param_dict.get('save_dir', '')
+    config_path = os.path.join(log_dir, 'config.txt')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        for k, v in param_dict.items():
+            f.write(f"{k}={v}\n")
+        f.write(f"best_weight_path={best_weight_path}\n")
+    # 追加/更新 experiment_records.csv
+    csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Documents/experiment_records.csv'))
+    fieldnames = ['model_name', 'train_time', 'backbone', 'input_shape', 'num_classes', 'weight_path', 'voc_path', 'token_length']
+    # 读取已有内容，避免重复
+    records = []
+    if os.path.exists(csv_path):
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                records.append(row)
+    # 构造新记录
+    new_record = {
+        'model_name': param_dict.get('backbone', ''),
+        'train_time': param_dict.get('train_time', ''),
+        'backbone': param_dict.get('backbone', ''),
+        'input_shape': str(param_dict.get('input_shape', '')),
+        'num_classes': param_dict.get('num_classes', ''),
+        'weight_path': best_weight_path,
+        'voc_path': param_dict.get('voc_path', param_dict.get('VOCdevkit_path', '')),
+        'token_length': param_dict.get('token_length', ''),
+    }
+    # 检查是否已存在相同权重路径，若有则更新，否则追加
+    updated = False
+    for i, row in enumerate(records):
+        if row['weight_path'] == best_weight_path:
+            records[i] = new_record
+            updated = True
+            break
+    if not updated:
+        records.append(new_record)
+    # 写回csv
+    with open(csv_path, 'w', encoding='utf-8', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in records:
+            writer.writerow(row)
+    print(f"[Info] 实验参数已同步至: {config_path} 和 {csv_path}")
+

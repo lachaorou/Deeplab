@@ -58,6 +58,7 @@ class DeeplabV3(object):
         #   没有GPU可以设置成False
         #-------------------------------#
         "cuda"              : True,
+        "token_length"      : 100,  # 新增默认token_length
     }
 
     #---------------------------------------------------#
@@ -67,6 +68,7 @@ class DeeplabV3(object):
         self.__dict__.update(self._defaults)
         for name, value in kwargs.items():
             setattr(self, name, value)
+        print(f'[Debug] DeeplabV3 __init__ token_length={getattr(self, "token_length", None)}')
         #---------------------------------------------------#
         #   画框设置不同的颜色
         #---------------------------------------------------#
@@ -111,6 +113,7 @@ class DeeplabV3(object):
         self.generate()
         
         show_config(**self._defaults)
+        print(f'[Debug] DeeplabV3 token_length={self.token_length}')
                     
     #---------------------------------------------------#
     #   获得所有的分类
@@ -121,10 +124,26 @@ class DeeplabV3(object):
         #-------------------------------#
         # 智能判断主干类型，决定是否传递 use_tokens
         backbone_lower = str(self.backbone).lower()
+        # 强制保证 token_length 一定存在于 self，且为 int 类型
+        if not hasattr(self, 'token_length') or self.token_length is None:
+            self.token_length = 100
+        self.token_length = int(self.token_length)
+        print(f'[Debug] DeeplabV3 generate() token_length={self.token_length}')
         if 'rein' in backbone_lower:
-            self.net = DeepLab(num_classes=self.num_classes, backbone=self.backbone, downsample_factor=self.downsample_factor, pretrained=False, use_tokens=self.use_tokens)
+            self.net = DeepLab(
+                num_classes=self.num_classes,
+                backbone=self.backbone,
+                pretrained=False,
+                downsample_factor=self.downsample_factor,
+                token_length=self.token_length
+            )
         else:
-            self.net = DeepLab(num_classes=self.num_classes, backbone=self.backbone, downsample_factor=self.downsample_factor, pretrained=False)
+            self.net = DeepLab(
+                num_classes=self.num_classes,
+                backbone=self.backbone,
+                pretrained=False,
+                downsample_factor=self.downsample_factor
+            )
         device      = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.net.load_state_dict(torch.load(self.model_path, map_location=device))
         self.net    = self.net.eval()
@@ -144,6 +163,7 @@ class DeeplabV3(object):
             self.net.module.tokens.register_forward_hook(hook_fn)
         elif hasattr(self.net, 'tokens'):
             self.net.tokens.register_forward_hook(hook_fn)
+        print(f'[Debug] DeepLab init token_length={self.token_length}')
 
     #---------------------------------------------------#
     #   检测图片

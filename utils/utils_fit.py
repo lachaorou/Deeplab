@@ -187,5 +187,23 @@ def fit_one_epoch(model_train, model, loss_history, eval_callback, optimizer, ep
         if len(loss_history.val_loss) <= 1 or (val_loss / epoch_step_val) <= min(loss_history.val_loss):
             print('Save best model to best_epoch_weights.pth')
             torch.save(model.state_dict(), os.path.join(save_dir, "best_epoch_weights.pth"))
+            # 自动记录参数到config.txt和experiment_records.csv
+            try:
+                from scripts.train import save_experiment_record
+                import datetime
+                # 构造参数字典
+                param_dict = {
+                    'backbone': getattr(model, 'backbone', 'unknown') if hasattr(model, 'backbone') else 'unknown',
+                    'input_shape': list(model.input_shape) if hasattr(model, 'input_shape') else '',
+                    'num_classes': num_classes,
+                    'save_dir': save_dir,
+                    'VOCdevkit_path': '',  # 可根据实际传入
+                    'token_length': getattr(model, 'token_length', ''),
+                    'train_time': datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
+                }
+                best_weight_path = os.path.join(save_dir, "best_epoch_weights.pth")
+                save_experiment_record(param_dict, best_weight_path)
+            except Exception as e:
+                print(f"[Warning] 自动记录实验参数失败: {e}")
             
         torch.save(model.state_dict(), os.path.join(save_dir, "last_epoch_weights.pth"))

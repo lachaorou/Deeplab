@@ -215,7 +215,8 @@ class ASPP(nn.Module):
 
 
 class DeepLab(nn.Module):
-    def __init__(self, num_classes, backbone, pretrained=True, downsample_factor=16, token_length=100, num_layers=6, embed_dims=None):
+    def __init__(self, num_classes, backbone, pretrained=True, downsample_factor=16, token_length=120, num_layers=6, embed_dims=None):
+        print(f'[Debug] DeepLab __init__ 参数: num_classes={num_classes}, backbone={backbone}, pretrained={pretrained}, downsample_factor={downsample_factor}, token_length={token_length}, num_layers={num_layers}, embed_dims={embed_dims}')
         super(DeepLab, self).__init__()
 
         if backbone=="xception":
@@ -229,6 +230,8 @@ class DeepLab(nn.Module):
         else:
             raise ValueError('Unsupported backbone - `{}`, Use mobilenet.'.format(backbone))
 
+        # Debug: 打印 token_length，确保传递正确
+        print(f'[Debug] DeepLab __init__ token_length={token_length}')
         # 灵活化embed_dims
         if embed_dims is None:
             embed_dims = in_channels
