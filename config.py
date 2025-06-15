@@ -1,4 +1,18 @@
+"""
+config.py - 项目全局参数配置模块
+
+- 集中管理数据路径、训练参数、优化器设置等
+- 支持自动归档与加载，便于实验复现与溯源
+- 推荐所有主脚本统一引用本模块参数
+
+用法示例：
+    from config import config, save_config, load_config
+    save_config(config, 'results/exp_xxx/config.txt')
+    config = load_config('results/exp_xxx/config.txt')
+"""
+
 import os
+import json
 
 # 项目根目录
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -69,3 +83,34 @@ class Config:
 
 # 兼容原有常量导入
 config = Config()
+
+# 新增：支持自动归档config到config.txt，便于实验溯源
+def save_config(config_obj, save_path):
+    # 将Config对象或config类实例转为dict
+    if hasattr(config_obj, '__dict__'):
+        config_dict = {k: v for k, v in config_obj.__dict__.items() if not k.startswith('__') and not callable(getattr(config_obj, k))}
+    else:
+        config_dict = dict(config_obj)
+    with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(config_dict, f, ensure_ascii=False, indent=2)
+
+def load_config(load_path):
+    """
+    从json/txt文件加载参数，返回Config实例。
+    Args:
+        load_path (str): 配置文件路径
+    Returns:
+        Config: 加载后的Config对象
+    """
+    with open(load_path, 'r', encoding='utf-8') as f:
+        config_dict = json.load(f)
+    cfg = Config()
+    for k, v in config_dict.items():
+        if hasattr(cfg, k):
+            setattr(cfg, k, v)
+    return cfg
+
+# 用法示例：
+# from config import config, save_config, load_config
+# save_config(config, 'results/exp_xxx/config.txt')
+# config = load_config('results/exp_xxx/config.txt')

@@ -101,7 +101,7 @@ target/
 .vscode/
 
 # 数据/权重/结果
-results/
+# results/
 *.pth
 *.tar
 *.ckpt

@@ -1,3 +1,24 @@
+"""
+train.py - DeeplabV3+ 语义分割主训练脚本
+
+本脚本为项目主训练入口，支持参数交互、权重归档、模型结构灵活配置、断点续训、可视化等。
+适用于Cityscapes/VOC等数据集，支持多主干、多消融实验。
+
+主要功能：
+- 参数集中管理与交互式修改
+- 自动生成结果归档目录
+- 支持Debug模式快速调试
+- 支持tokens机制与多种损失函数
+- 训练过程可视化与日志归档
+- 断点续训与权重自动加载
+
+使用方法：
+    python scripts/train.py [--debug]
+
+Author: 团队协作
+Date: 2025-06-15
+"""
+
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -32,11 +53,19 @@ from datetime import datetime
 from utils.visualize_training_progress import visualize_train_samples, visualize_val_compare, batch_update_all_markdown
 import csv
 import time
+from config import config, save_config, load_config
 
 # 训练结果自动归档目录生成函数
 from datetime import datetime
 
 def get_result_dirs(model_name):
+    """
+    自动生成训练结果归档目录（日志、mIoU、可视化等），并返回各目录路径和时间戳。
+    Args:
+        model_name (str): 当前模型名称
+    Returns:
+        logs_dir, mious_dir, visual_dir, time_str (str): 各目录绝对路径及时间戳
+    """
     time_str = datetime.now().strftime('%Y%m%d_%H%M%S')
     base = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     results_dir = os.path.join(base, 'Results')
@@ -47,7 +76,15 @@ def get_result_dirs(model_name):
         os.makedirs(d, exist_ok=True)
     return logs_dir, mious_dir, visual_dir, time_str
 
+
 def str2bool(v):
+    """
+    字符串转布尔类型，兼容命令行参数解析。
+    Args:
+        v (str|bool): 输入字符串或布尔值
+    Returns:
+        bool: 转换后的布尔值
+    """
     if isinstance(v, bool):
         return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -86,6 +123,12 @@ else:
     pass
 
 def print_param_table(param_dict, explain_dict=None):
+    """
+    以表格形式打印训练参数及说明。
+    Args:
+        param_dict (dict): 参数字典
+        explain_dict (dict): 参数说明字典（可选）
+    """
     print("\n========== 训练参数表 ==========")
     max_key_len = max(len(k) for k in param_dict)
     for k, v in param_dict.items():
@@ -94,6 +137,24 @@ def print_param_table(param_dict, explain_dict=None):
     print("================================\n")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, help='外部参数文件路径（支持一键复现）')
+    args, unknown = parser.parse_known_args()
+    # 优先加载外部参数文件
+    if args.config:
+        config = load_config(args.config)
+        print(f"[Info] 已从 {args.config} 加载参数，支持一键复现！")
+    # 其余参数解析和主流程...
+    # =============================
+    # 主流程入口 Main Training Entry
+    # =============================
+    # 1. 参数说明与交互
+    # 2. 权重选择与参数同步
+    # 3. 模型定义与损失函数选择
+    # 4. 数据加载与训练主循环
+    # 5. 日志与结果归档
+    # 6. 支持断点续训与可视化
+
     # 参数说明（中英文对照）
     param_explain = {
         'init_epoch': '起始轮数',
@@ -311,63 +372,7 @@ if __name__ == "__main__":
     epoch = args.epoch
     use_tokens = args.use_tokens
 
-    #---------------------------------#
-    #   Cuda    是否使用Cuda
-    #           没有GPU可以设置成False
-    #----------------------------------------------#
-    #   Seed    用于固定随机种子
-    #           使得每次独立训练都可以获得一样的结果
-    # seed            = 11
-    #---------------------------------------------------------------------#
-    #   distributed     用于指定是否使用单机多卡分布式运行
-    #                   终端指令仅支持Ubuntu。CUDA_VISIBLE_DEVICES用于在Ubuntu下指定显卡。
-    #                   Windows系统下默认使用DP模式调用所有显卡，不支持DDP。
-    #   DP模式：
-    #       设置            distributed = False
-    #       在终端中输入    CUDA_VISIBLE_DEVICES=0,1 python train.py
-    #   DDP模式：
-    #       设置            distributed = True
-    #       在终端中输入    CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 train.py
-    #---------------------------------------------------------------------#
-    # distributed     = False
-    #---------------------------------------------------------------------#
-    #   sync_bn     是否使用sync_bn，DDP模式多卡可用
-    #---------------------------------------------------------------------#
-    # sync_bn         = False
-    #---------------------------------------------------------------------#
-    #   fp16        是否使用混合精度训练.可减少约一半的显存、需要pytorch1.7.1以上
-    #---------------------------------------------------------------------#
-    # fp16            = True
-    #-----------------------------------------------------#
-    #   num_classes     训练自己的数据集必须要修改的
-    #                   Cityscapes官方19类，严格设为19
-    #-----------------------------------------------------#
-    # num_classes     = 19
-    #---------------------------------#
-    #   所使用的的主干网络：
-    #   mobilenet
-    #   xception
-    #---------------------------------#
-    # backbone        = "xception"
-    #----------------------------------------------------------------------------------------------------------------------------#
-    #   pretrained      是否使用主干网络的预训练权重，此处使用的是主干的权重，因此是在模型构建的时候进行加载的。
-    #                   如果设置了model_path，则主干的权值无需加载，pretrained的值无意义。
-    #                   如果不设置model_path，pretrained = True，此时仅加载主干开始训练。
-    #                   如果不设置model_path，pretrained = False，Freeze_Train = Fasle，此时从0开始训练，且没有冻结主干的过程。
-    #----------------------------------------------------------------------------------------------------------------------------#
-    # pretrained      = True
-    #----------------------------------------------------------------------------------------------------------------------------#
-    #   权值文件的下载请看README，可以通过网盘下载。模型的 预训练权重 对不同数据集是通用的，因为特征是通用的。
-    #   模型的 预训练权重 比较重要的部分是 主干特征提取网络的权值部分，用于进行特征提取。
-    #   预训练权重对于99%的情况都必须要用，不用的话主干部分的权值太过随机，特征提取效果不明显，网络训练的结果也不会好
-    #
-    #   如果训练过程中存在中断训练的操作，可以将model_path设置成logs文件夹下的权值文件，将已经训练了一部分的权值再次载入。
-    #   同时修改下方的 冻结阶段 或者 解冻阶段 的参数，来保证模型epoch的连续性。
-    #   当model_path = ''的时候不加载整个模型的权重。
-    #   此处使用的是整个模型的权重，因此是在train.py进行加载的，pretrain不影响此处的权值加载。
-    #   如果想要让模型从主干的预训练权值开始训练，则设置model_path = ''，pretrain = True，此时仅加载主干。
-    #   如果想要让模型从0开始训练，则设置model_path = ''，pretrain = False，Freeze_Train = False，此时从0开始训练，且没有冻结主干的过程。
-    #   
+    
     #   一般来讲，网络从0开始的训练效果会很差，因为权值太过随机，特征提取效果不明显，因此非常、非常、非常不建议大家从0开始训练！
     #   如果一定要从0开始，可以了解imagenet数据集，首先训练分类模型，获得网络的主干部分权值，分类模型的 主干部分 和该模型通用，基于此进行训练。
     #----------------------------------------------------------------------------------------------------------------------------#
@@ -677,8 +682,6 @@ if __name__ == "__main__":
         #---------------------------------------------------------#
         #   总训练世代指的是遍历全部数据的总次数
         #   总训练步长指的是梯度下降的总次数 
-        #   每个训练世代包含若干训练步长，每个训练步长进行一次梯度下降。
-        #   此处仅建议最低训练世代，上不封顶，计算时只考虑了解冻部分
         #----------------------------------------------------------#
         wanted_step = 1.5e4 if optimizer_type == "sgd" else 0.5e4
         total_step  = num_train // Unfreeze_batch_size * UnFreeze_Epoch
@@ -983,11 +986,40 @@ if __name__ == "__main__":
                 f.write(f"{k}={v}\n")
         print(f"[Info] 配置已保存至: {config_path}")
 
+# === 保存最终参数快照到实验目录 ===
+def save_config(final_args, save_dir):
+    """
+    保存最终参数配置到指定目录（config.txt）。
+    Args:
+        final_args (dict): 参数字典
+        save_dir (str): 保存目录
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    config_path = os.path.join(save_dir, 'config.txt')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        for k, v in final_args.items():
+            f.write(f"{k}={v}\n")
+
+# 合并命令行参数、交互输入、默认值，生成final_args
+final_args = default_args.copy()
+# 用命令行参数覆盖
+for k in vars(args):
+    v = getattr(args, k)
+    if v is not None:
+        final_args[k] = v
+# 用交互输入覆盖（已在default_args中处理）
+# 保存到实验目录
+save_config(final_args, save_dir=final_args['save_dir'])
+
 import subprocess
 
 def run_evaluation_and_save(logs_dir, mious_dir, param_dict):
     """
-    自动调用 get_miou.py 评估脚本，解析输出的 mIoU、mPA 等指标，并写入csv。
+    自动调用评估脚本，解析mIoU/mPA等指标并写入csv。
+    Args:
+        logs_dir (str): 日志目录
+        mious_dir (str): mIoU结果目录
+        param_dict (dict): 当前实验参数
     """
     eval_script = os.path.join(os.path.dirname(__file__), 'get_miou.py')
     # 假设 get_miou.py 支持命令行参数 --log_dir --output_dir
@@ -1017,6 +1049,9 @@ run_evaluation_and_save(logs_dir, mious_dir, default_args)
 def generate_visual_reports(visual_dir, by_sample_dir):
     """
     自动生成Word和PDF可视化报告，图片按样本为主嵌入表格，报告归档到visual_dir。
+    Args:
+        visual_dir (str): 可视化报告保存目录
+        by_sample_dir (str): 按样本可视化图片目录
     """
     import shutil
     import sys
@@ -1038,7 +1073,6 @@ def generate_visual_reports(visual_dir, by_sample_dir):
     print(f"[Info] 可视化报告已生成: {visual_dir}")
 
 if __name__ == "__main__":
-    # ...existing code...
     # 训练主循环结束后自动生成可视化报告
     by_sample_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Inspect/VisualizeCompare/by_sample'))
     generate_visual_reports(visual_dir, by_sample_dir)
@@ -1047,9 +1081,10 @@ import csv
 
 def save_experiment_record(param_dict, best_weight_path):
     """
-    保存当前实验参数到 config.txt 和 Documents/experiment_records.csv。
-    param_dict: dict，当前训练参数。
-    best_weight_path: str，best权重的保存路径。
+    保存当前实验参数到config.txt和Documents/experiment_records.csv。
+    Args:
+        param_dict (dict): 当前训练参数
+        best_weight_path (str): best权重保存路径
     """
     import os
     # 保存 config.txt

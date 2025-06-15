@@ -1,5 +1,28 @@
+"""
+get_miou.py - DeeplabV3+ 评估脚本
+
+本脚本用于自动化评估模型mIoU、mPA等分割指标，支持从实验参数表自动选择实验、自动同步权重与参数、批量可视化预测结果。
+
+主要功能：
+- 支持从experiment_records.csv自动选择实验参数
+- 自动同步权重、token_length、num_layers等参数
+- 自动生成评估输出目录，保存预测与可视化结果
+- 自动计算mIoU、mPA等指标并输出
+- 支持批量可视化输入/标签/预测对比
+- 支持通过--config参数一键加载历史参数，实现评估参数复现
+
+使用方法：
+    python scripts/get_miou.py --config results/exp_xxx/config.txt
+
+Author: 团队协作
+Date: 2025-06-15
+"""
+
 import sys
 import os
+import argparse
+from config import config, load_config
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from PIL import Image
@@ -8,8 +31,6 @@ from models.deeplab import DeeplabV3
 from utils.utils_metrics import compute_mIoU, show_results
 from cityscapesscripts.evaluation.evalPixelLevelSemanticLabeling import main as eval_main
 import numpy as np
-import argparse
-import glob
 import pandas as pd
 import datetime
 
@@ -21,8 +42,13 @@ import datetime
 '''
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DeeplabV3+ mIoU Evaluation")
+    parser.add_argument('--config', type=str, help='外部参数文件路径（支持一键复现）')
     parser.add_argument('--experiment_csv', type=str, default='Documents/experiment_records.csv', help='实验参数表格csv路径')
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    # 优先加载外部参数文件
+    if args.config:
+        config = load_config(args.config)
+        print(f"[Info] 已从 {args.config} 加载参数，支持一键复现！")
 
     # 只从参数表读取参数
     df = pd.read_csv(args.experiment_csv)
@@ -63,6 +89,13 @@ if __name__ == "__main__":
     # 优先从权重文件自动读取 token_length，确保与权重一致
     import torch
     def extract_token_length_from_state_dict(sd):
+        """
+        从权重state_dict中自动提取token_length，兼容DataParallel和嵌套结构。
+        Args:
+            sd (dict): 权重state_dict
+        Returns:
+            int or None: token_length
+        """
         # 兼容 DataParallel 及嵌套结构
         if 'reins.learnable_tokens' in sd:
             return sd['reins.learnable_tokens'].shape[1]

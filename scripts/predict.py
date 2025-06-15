@@ -1,3 +1,24 @@
+"""
+predict.py - DeeplabV3+ 推理/预测脚本
+
+本脚本集成单张图片预测、视频流检测、FPS测试、批量文件夹预测、ONNX导出等功能。
+通过mode参数切换不同推理/测试模式，适用于模型效果验证、批量推理、部署前导出等场景。
+
+主要功能：
+- 单张图片预测与可视化
+- 视频流检测与实时显示/保存
+- FPS性能测试
+- 文件夹批量预测与结果保存
+- 导出ONNX模型
+- 支持通过--config参数一键加载历史参数，实现推理参数复现
+
+使用方法：
+    python scripts/predict.py --config results/exp_xxx/config.txt
+
+Author: 团队协作
+Date: 2025-06-15
+"""
+
 #----------------------------------------------------#
 #   将单张图片预测、摄像头检测和FPS测试功能
 #   整合到了一个py文件中，通过指定mode进行模式的修改。
@@ -13,8 +34,17 @@ from deeplab import DeeplabV3
 from cityscapesscripts.helpers.labels import trainId2label
 
 from cityscapesscripts.evaluation.evalPixelLevelSemanticLabeling import main as cityscapes_eval
+from config import config, load_config
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, help='外部参数文件路径（支持一键复现）')
+    args, unknown = parser.parse_known_args()
+    # 优先加载外部参数文件
+    if args.config:
+        config = load_config(args.config)
+        print(f"[Info] 已从 {args.config} 加载参数，支持一键复现！")
+
     #-------------------------------------------------------------------------#
     #   如果想要修改对应种类的颜色，到__init__函数里修改self.colors即可
     #-------------------------------------------------------------------------#
