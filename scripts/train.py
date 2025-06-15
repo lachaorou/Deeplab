@@ -261,8 +261,8 @@ if __name__ == "__main__":
     weight_path = None
     LOG_DIR = default_args['save_dir']
     backbone = default_args['backbone']
-    # 优先使用 models/model_data 下的权重
-    model_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models/model_data'))
+    # 优先使用根目录 model_data 下的权重
+    model_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../model_data'))
     if user_weight_input == '' or user_weight_input.lower() == 'true':
         if backbone == 'mobilenet':
             weight_path = os.path.join(model_data_dir, 'mobilenet_v2.pth.tar')
@@ -583,9 +583,9 @@ if __name__ == "__main__":
     #----------------------------------------------------#
     # 固定预训练权重路径，按主干自动选择
     if backbone == "mobilenet":
-        pretrained_weights = "E:/deeplearning/deeplabv3plus/models/model_data/mobilenet_v2.pth.tar"
+        pretrained_weights = os.path.join(model_data_dir, 'mobilenet_v2.pth.tar')
     elif backbone == "xception":
-        pretrained_weights = "E:/deeplearning/deeplabv3plus/models/model_data/xception.pth.tar"
+        pretrained_weights = os.path.join(model_data_dir, 'xception.pth.tar')
     else:
         pretrained_weights = None
 

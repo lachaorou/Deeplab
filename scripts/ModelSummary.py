@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import torch
-from models.deeplabv3_reins import DeepLabV3
+from models.deeplabv3_reins import DeepLab
 import time
 
 # 配置
@@ -11,8 +11,15 @@ INPUT_SHAPE = (3, 512, 512)  # 可根据实际输入尺寸调整
 NUM_CLASSES = 19
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-# 实例化模型（如有主干/参数可补充）
-model = DeepLabV3(num_classes=NUM_CLASSES)
+# 实例化模型（补全所有必需参数）
+model = DeepLab(
+    num_classes=NUM_CLASSES,
+    backbone="mobilenet",
+    pretrained=True,
+    downsample_factor=8,
+    token_length=120,
+    num_layers=2
+)
 model = model.to(DEVICE)
 
 # 统计参数量

@@ -74,7 +74,7 @@ def show_config(**kwargs):
         print('|%25s | %40s|' % (str(key), str(value)))
     print('-' * 70)
 
-def download_weights(backbone, model_dir=os.path.join('data', 'model_data') if os.path.exists(os.path.join('data', 'model_data')) else "./model_data"):
+def download_weights(backbone, model_dir=os.path.join(os.path.dirname(__file__), '../../model_data')):
     from torch.hub import load_state_dict_from_url
     
     download_urls = {

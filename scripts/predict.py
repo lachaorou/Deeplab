@@ -77,7 +77,7 @@ if __name__ == "__main__":
     #-------------------------------------------------------------------------#
     simplify        = True
     import os
-    onnx_save_path  = os.path.join('data', 'model_data', 'models.onnx') if os.path.exists('data/model_data') else "model_data/models.onnx"
+    onnx_save_path  = os.path.join('model_data', 'models.onnx')
 
     if mode == "predict":
         '''

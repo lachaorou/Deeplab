@@ -135,7 +135,7 @@ class MobileNetV2(nn.Module):
                 m.bias.data.zero_()
 
 
-def load_url(url, model_dir=os.path.join('data', 'model_data') if os.path.exists(os.path.join('data', 'model_data')) else './model_data', map_location=None):
+def load_url(url, model_dir=os.path.join(os.path.dirname(__file__), '../model_data'), map_location=None):
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     filename = url.split('/')[-1]
