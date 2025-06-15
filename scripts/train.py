@@ -54,6 +54,8 @@ from utils.visualize_training_progress import visualize_train_samples, visualize
 import csv
 import time
 from config import config, save_config, load_config
+from models.mobilenetv2_reinsmid import MobileNetV2_ReinsMid
+from models.mobilenetv2_reinsmid_aspp import MobileNetV2_ReinsMidASPP
 
 # 训练结果自动归档目录生成函数
 from datetime import datetime
@@ -244,10 +246,33 @@ if __name__ == "__main__":
 
     # === 权重加载交互和参数同步后，定义模型 ===
     # 这里假设你有类似如下的模型定义代码：
+    reins_params = dict(
+        num_layers=default_args['num_layers'],
+        embed_dims=default_args['embed_dims'] or 320,
+        patch_size=default_args['patch_size'],
+        token_length=default_args['token_length'],
+        use_softmax=default_args['use_softmax'],
+        scale_init=default_args['scale_init'],
+    )
+    def get_backbone(backbone_name, reins_params, downsample_factor, pretrained):
+        if backbone_name == 'mobilenet_reinsmid':
+            return MobileNetV2_ReinsMid(reins_params=reins_params, downsample_factor=downsample_factor, pretrained=pretrained)
+        elif backbone_name == 'mobilenet_reinsmid_aspp':
+            return MobileNetV2_ReinsMidASPP(reins_params=reins_params, downsample_factor=downsample_factor, pretrained=pretrained)
+        elif backbone_name == 'mobilenet':
+            from models.mobilenetv2 import MobileNetV2
+            return MobileNetV2(downsample_factor=downsample_factor, pretrained=pretrained)
+        elif backbone_name == 'xception':
+            from models.xception import xception
+            return xception(downsample_factor=downsample_factor, pretrained=pretrained)
+        else:
+            raise ValueError(f'不支持的backbone: {backbone_name}')
+
+    backbone_model = get_backbone(default_args['backbone'], reins_params, downsample_factor=8, pretrained=pretrained)
     model = DeepLab(
         num_classes=default_args['num_classes'],
-        backbone=default_args['backbone'],
-        pretrained=True,
+        backbone=backbone_model,
+        pretrained=pretrained,
         downsample_factor=8,
         token_length=default_args['token_length'],
         num_layers=default_args['num_layers'],
@@ -372,14 +397,14 @@ if __name__ == "__main__":
     epoch = args.epoch
     use_tokens = args.use_tokens
 
-    
+
     #   一般来讲，网络从0开始的训练效果会很差，因为权值太过随机，特征提取效果不明显，因此非常、非常、非常不建议大家从0开始训练！
     #   如果一定要从0开始，可以了解imagenet数据集，首先训练分类模型，获得网络的主干部分权值，分类模型的 主干部分 和该模型通用，基于此进行训练。
     #----------------------------------------------------------------------------------------------------------------------------#
     # 断点续训，加载第45轮权重
     model_path      = ''  # 从头训练，不加载旧权重
     #---------------------------------------------------------#
-    #   downsample_factor   下采样的倍数8、16 
+    #   downsample_factor   下采样的倍数8、16
     #                       8下采样的倍数较小、理论上效果更好。
     #                       但也要求更大的显存
     #---------------------------------------------------------#
@@ -389,13 +414,13 @@ if __name__ == "__main__":
     #------------------------------#
     # input_shape         = [1280, 960]  # 适配8G显存
     input_shape         = [1536, 1024]  # 升级分辨率，适配24G显存
-    
+
     #----------------------------------------------------------------------------------------------------------------------------#
     #   训练分为两个阶段，分别是冻结阶段和解冻阶段。设置冻结阶段是为了满足机器性能不足的同学的训练需求。
     #   冻结训练需要的显存较小，显卡非常差的情况下，可设置Freeze_Epoch等于UnFreeze_Epoch，此时仅仅进行冻结训练。
-    #      
+    #
     #   在此提供若干参数设置建议，各位训练者根据自己的需求进行灵活调整：
-    #   （一）从整个模型的预训练权重开始训练： 
+    #   （一）从整个模型的预训练权重开始训练：
     #       Adam：
     #           Init_Epoch = 0，Freeze_Epoch = 50，UnFreeze_Epoch = 100，Freeze_Train = True，optimizer_type = 'adam'，Init_lr = 5e-4，weight_decay = 0。（冻结）
     #           Init_Epoch = 0，UnFreeze_Epoch = 100，Freeze_Train = False，optimizer_type = 'adam'，Init_lr = 5e-4，weight_decay = 0。（不冻结）
@@ -601,7 +626,39 @@ if __name__ == "__main__":
         pass
 
     # 模型初始化时传递token_length参数
-    model = DeepLab(num_classes=num_classes, backbone=backbone, downsample_factor=8, pretrained=pretrained, token_length=token_length)
+    reins_params = dict(
+        num_layers=default_args['num_layers'],
+        embed_dims=default_args['embed_dims'] or 320,
+        patch_size=default_args['patch_size'],
+        token_length=default_args['token_length'],
+        use_softmax=default_args['use_softmax'],
+        scale_init=default_args['scale_init'],
+    )
+    def get_backbone(backbone_name, reins_params, downsample_factor, pretrained):
+        if backbone_name == 'mobilenet_reinsmid':
+            return MobileNetV2_ReinsMid(reins_params=reins_params, downsample_factor=downsample_factor, pretrained=pretrained)
+        elif backbone_name == 'mobilenet_reinsmid_aspp':
+            return MobileNetV2_ReinsMidASPP(reins_params=reins_params, downsample_factor=downsample_factor, pretrained=pretrained)
+        elif backbone_name == 'mobilenet':
+            from models.mobilenetv2 import MobileNetV2
+            return MobileNetV2(downsample_factor=downsample_factor, pretrained=pretrained)
+        elif backbone_name == 'xception':
+            from models.xception import xception
+            return xception(downsample_factor=downsample_factor, pretrained=pretrained)
+        else:
+            raise ValueError(f'不支持的backbone: {backbone_name}')
+
+    backbone_model = get_backbone(default_args['backbone'], reins_params, downsample_factor=8, pretrained=pretrained)
+    model = DeepLab(
+        num_classes=default_args['num_classes'],
+        backbone=backbone_model,
+        pretrained=pretrained,
+        downsample_factor=8,
+        token_length=default_args['token_length'],
+        num_layers=default_args['num_layers'],
+        embed_dims=default_args['embed_dims']
+    )
+
     if not pretrained:
         weights_init(model)
     # 不再加载全模型权重，避免类别数不一致问题
@@ -646,7 +703,7 @@ if __name__ == "__main__":
             model_train = torch.nn.DataParallel(model)
             cudnn.benchmark = True
             model_train = model_train.cuda()
-    
+
     #---------------------------#
     #   读取数据集对应的txt
     #---------------------------#
@@ -681,7 +738,7 @@ if __name__ == "__main__":
         )
         #---------------------------------------------------------#
         #   总训练世代指的是遍历全部数据的总次数
-        #   总训练步长指的是梯度下降的总次数 
+        #   总训练步长指的是梯度下降的总次数
         #----------------------------------------------------------#
         wanted_step = 1.5e4 if optimizer_type == "sgd" else 0.5e4
         total_step  = num_train // Unfreeze_batch_size * UnFreeze_Epoch
@@ -692,7 +749,7 @@ if __name__ == "__main__":
 #            print("\n\033[1;33;44m[Warning] 使用%s优化器时，建议将训练总步长设置到%d以上。\033[0m"%(optimizer_type, wanted_step))
 #            print("\033[1;33;44m[Warning] 本次运行的总训练数据量为%d，Unfreeze_batch_size为%d，共训练%d个Epoch，计算出总训练步长为%d。\033[0m"%(num_train, Unfreeze_batch_size, UnFreeze_Epoch, total_step))
 #            print("\033[1;33;44m[Warning] 由于总训练步长为%d，小于建议总步长%d，建议设置总世代为%d。\033[0m"%(total_step, wanted_step, wanted_epoch))
-        
+
     #------------------------------------------------------#
     #   主干特征提取网络特征通用，冻结训练可以加快训练速度.也可以在训练初期防止权值被破坏。
     #   Init_Epoch为起始世代,Interval_Epoch为冻结训练的世代
@@ -736,13 +793,13 @@ if __name__ == "__main__":
         #   获得学习率下降的公式
         #---------------------------------------#
         lr_scheduler_func = get_lr_scheduler(lr_decay_type, Init_lr_fit, Min_lr_fit, UnFreeze_Epoch)
-        
+
         #---------------------------------------#
         #   判断每一个世代的长度
         #---------------------------------------#
         epoch_step      = num_train // batch_size
         epoch_step_val  = num_val // batch_size
-        
+
         if epoch_step == 0 or epoch_step_val == 0:
             raise ValueError("数据集过小，无法继续进行训练，请扩充数据集。")
 
@@ -760,10 +817,10 @@ if __name__ == "__main__":
             shuffle         = True
 
         gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
-                                    drop_last = True, collate_fn = deeplab_dataset_collate, sampler=train_sampler, 
+                                    drop_last = True, collate_fn = deeplab_dataset_collate, sampler=train_sampler,
                                     worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
         # 验证集应不打乱顺序且不丢弃最后一个batch
-        gen_val         = DataLoader(val_dataset, shuffle=False, batch_size=batch_size, num_workers=num_workers, pin_memory=True, 
+        gen_val         = DataLoader(val_dataset, shuffle=False, batch_size=batch_size, num_workers=num_workers, pin_memory=True,
                                     drop_last=False, collate_fn=deeplab_dataset_collate, sampler=val_sampler,
                                     worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
 
@@ -775,7 +832,7 @@ if __name__ == "__main__":
                                             eval_flag=eval_flag, period=eval_period)
         else:
             eval_callback   = None
-        
+
         #---------------------------------------#
         #   开始模型训练
         #---------------------------------------#
@@ -813,16 +870,16 @@ if __name__ == "__main__":
                 if distributed:
                     batch_size = batch_size // ngpus_per_node
                 gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
-                                            drop_last = True, collate_fn = deeplab_dataset_collate, sampler=train_sampler, 
+                                            drop_last = True, collate_fn = deeplab_dataset_collate, sampler=train_sampler,
                                             worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
-                gen_val         = DataLoader(val_dataset, shuffle=False, batch_size=batch_size, num_workers=num_workers, pin_memory=True, 
+                gen_val         = DataLoader(val_dataset, shuffle=False, batch_size=batch_size, num_workers=num_workers, pin_memory=True,
                                             drop_last=False, collate_fn=deeplab_dataset_collate, sampler=val_sampler,
                                             worker_init_fn=partial(worker_init_fn, rank=rank, seed=seed))
                 UnFreeze_flag = True
             if distributed:
                 train_sampler.set_epoch(epoch)
             set_optimizer_lr(optimizer, lr_scheduler_func, epoch)
-            fit_one_epoch(model_train, model, loss_history, eval_callback, optimizer, epoch, 
+            fit_one_epoch(model_train, model, loss_history, eval_callback, optimizer, epoch,
                     epoch_step, epoch_step_val, gen, gen_val, UnFreeze_Epoch, Cuda, dice_loss, focal_loss, cls_weights, num_classes, fp16, scaler, save_period, save_dir, local_rank)
             # === 新增：每5轮自动可视化10个训练样本 ===
             if (epoch + 1) % 5 == 0 and local_rank == 0:
